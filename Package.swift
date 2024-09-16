@@ -25,7 +25,8 @@ let package = Package(
     products: [
         .library(
             name: "WebAuthn",
-            targets: ["WebAuthn"]),
+            targets: ["WebAuthn"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/valpackett/SwiftCBOR.git", exact: "0.4.6"),
@@ -33,10 +34,13 @@ let package = Package(
     targets: [
         .target(
             name: "WebAuthn",
-            plugins: [.plugin(name: "SwiftCBOR", package: "SwiftCBOR")]
+            dependencies: [
+                .product(name: "SwiftCBOR", package: "SwiftCBOR")
+            ]
         ),
         .testTarget(
             name: "WebAuthnTests",
-            dependencies: ["WebAuthn"]),
+            dependencies: ["WebAuthn"]
+        ),
     ]
 )
