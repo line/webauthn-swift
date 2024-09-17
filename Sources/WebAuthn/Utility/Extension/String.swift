@@ -23,11 +23,7 @@ extension String {
         return Data(base64Encoded: base64, options: .ignoreUnknownCharacters)
     }
 
-    func toData() -> Data? {
-        return self.data(using: .utf8)
-    }
-
-    func toSHA256() -> Data? {
-        return self.toData()?.toSHA256()
+    func toSHA256() -> Data {
+        return Data(self.utf8).toSHA256()
     }
 }

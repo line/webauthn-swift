@@ -130,9 +130,7 @@ extension Authenticator {
             let cborPubKey = try convertSecKeyToCborEc2coseKey(pubKey).get()
             let attestedCredData = AttestedCredentialData(aaguid: type.aaguid, credentialId: credentialId,
                                                           publicKey: cborPubKey)
-            guard let rpIdHash = rpEntity.id.toSHA256() else {
-                throw WebAuthnError.utilityError(cause: "Failed to convert rpId into SHA256: \(rpEntity.id)")
-            }
+            let rpIdHash = rpEntity.id.toSHA256()
             let authData = AuthenticatorData(rpIdHash, true, true, UInt32(0), attestedCredData,
                                              extensions?.processAuthenticatorExtensions())
             let attestation = NoneAttestationObject(authData: authData.toData())
@@ -165,9 +163,7 @@ extension Authenticator {
             }
             let selectedCredential = credentialOptions[0]
             let credId = selectedCredential.id
-            guard let rpIdHash = rpId.toSHA256() else {
-                throw WebAuthnError.utilityError(cause: "Failed to convert rpId into SHA256: \(rpId)")
-            }
+            let rpIdHash = rpId.toSHA256()
             let key = try keyStorage.load(credId).mapError { e in
                 WebAuthnError.keyStorageError(e, credId: credId)
             }.get()
