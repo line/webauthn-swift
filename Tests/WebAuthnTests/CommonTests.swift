@@ -53,7 +53,7 @@ final class CommonTests: XCTestCase {
     }
 
     func testBase64UrlToData() {
-        let data = "data".toData()!
+        let data = "data".toData()
         let base64Url = data.toBase64Url()
         let dataFromBase64Url = base64Url.base64UrlToData()
         XCTAssertNotNil(dataFromBase64Url)

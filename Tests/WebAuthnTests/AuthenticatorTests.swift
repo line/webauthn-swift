@@ -39,7 +39,7 @@ final class AuthenticatorTests: XCTestCase {
     ) async -> Result<AuthenticatorMakeCredentialResult, WebAuthnError> {
         let rpEntity = PublicKeyCredentialRpEntity(id: rpId, name: rpId)
         let userEntity = PublicKeyCredentialUserEntity(id: username, name: username, displayName: username)
-        return await authn.makeCredential(hash: "ios:test-create".toSHA256()!,
+        return await authn.makeCredential(hash: "ios:test-create".toSHA256(),
                                           rpEntity: rpEntity,
                                           userEntity: userEntity,
                                           credTypesAndPubKeyAlgs: credTypesAndPubKeyAlgs,
@@ -53,7 +53,7 @@ final class AuthenticatorTests: XCTestCase {
                       _ extensions: AuthenticatorExtensionsInput? = nil
     ) async -> Result<AuthenticatorGetAssertionResult, WebAuthnError> {
         return await authn.getAssertion(rpId: rpId,
-                                        hash: "ios:test-get".toSHA256()!,
+                                        hash: "ios:test-get".toSHA256(),
                                         allowCredentialDescriptorList: allowedList,
                                         extensions: extensions)
     }
@@ -210,7 +210,7 @@ final class AuthenticatorTests: XCTestCase {
     func testGetAssertionWithLoadFailedAtCredSrcStorage() async throws {
         let db = MockCredentialSourceStorageWithLoadFailed()
         let authn = BiometricAuthenticator(db, ks, la)
-        let notAllowedCredId = "suspicious credential id".toData()!.toBase64Url()
+        let notAllowedCredId = "suspicious credential id".toData().toBase64Url()
         do {
             let notAllowedList = [PublicKeyCredentialDescriptor(type: "public-key", id: notAllowedCredId, transports: [.itn])]
             _ = try await authenticate(authn, defaultRpId, notAllowedList).get()

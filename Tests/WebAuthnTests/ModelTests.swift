@@ -28,7 +28,7 @@ final class ModelTests: XCTestCase {
     let extsOut = AuthenticatorExtensionsOutput()
 
     func testNoneAttestationObjectWithoutAttestedCredentialDataAndExtension() throws {
-        let authData = AuthenticatorData(rpId.toSHA256()!, true, true, UInt32(0), nil, nil)
+        let authData = AuthenticatorData(rpId.toSHA256(), true, true, UInt32(0), nil, nil)
         let attestationObject = NoneAttestationObject(authData: authData.toData())
         let encoded = try! attestationObject.toCBOR().get()
         let decoded = try! NoneAttestationObject.decode(encoded).get()
@@ -36,7 +36,7 @@ final class ModelTests: XCTestCase {
     }
 
     func testNoneAttestationObjectWithoutAttestedCredentialData() throws {
-        let authData = AuthenticatorData(rpId.toSHA256()!, true, true, UInt32(0), nil, extsOut)
+        let authData = AuthenticatorData(rpId.toSHA256(), true, true, UInt32(0), nil, extsOut)
         let attestationObject = NoneAttestationObject(authData: authData.toData())
         let encoded = try! attestationObject.toCBOR().get()
         let decoded = try! NoneAttestationObject.decode(encoded).get()
@@ -44,7 +44,7 @@ final class ModelTests: XCTestCase {
     }
 
     func testNoneAttestationObjectWithoutExtension() throws {
-        let authData = AuthenticatorData(rpId.toSHA256()!, true, true, UInt32(0), attestedCredData, nil)
+        let authData = AuthenticatorData(rpId.toSHA256(), true, true, UInt32(0), attestedCredData, nil)
         let attestationObject = NoneAttestationObject(authData: authData.toData())
         let encoded = try! attestationObject.toCBOR().get()
         let decoded = try! NoneAttestationObject.decode(encoded).get()
@@ -52,7 +52,7 @@ final class ModelTests: XCTestCase {
     }
 
     func testNoneAttestationObject() throws {
-        let authData = AuthenticatorData(rpId.toSHA256()!, true, true, UInt32(0), attestedCredData, extsOut)
+        let authData = AuthenticatorData(rpId.toSHA256(), true, true, UInt32(0), attestedCredData, extsOut)
         let attestationObject = NoneAttestationObject(authData: authData.toData())
         let encoded = try! attestationObject.toCBOR().get()
         let decoded = try! NoneAttestationObject.decode(encoded).get()

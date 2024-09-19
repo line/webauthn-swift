@@ -22,7 +22,7 @@ final class KeyHelperTests: XCTestCase {
     func testSignAndVerify() throws {
         // Sign
         let privateKey = try generatePublicPrivateKeyPair(es256Type, es256Length).get()
-        let secret = "this is a secret".toData()!
+        let secret = "this is a secret".toData()
         let signature = try sign(privateKey, .ecdsaSignatureMessageX962SHA256, secret).get()
         // Verify
         let publicKey = getPublicKey(privateKey)
