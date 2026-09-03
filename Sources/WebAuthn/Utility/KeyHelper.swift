@@ -14,18 +14,12 @@
 
 import Foundation
 
-func convertSecKeyToCborEc2coseKey(_ key: SecKey) -> Result<Data, WebAuthnError> {
+func convertSecKeyToCborEc2coseKey(_ key: SecKey, alg: COSEAlgorithmIdentifier) -> Result<Data, WebAuthnError> {
     switch convertSecKeyToData(key) { // key is always an uncompressed key
     case .failure(let err):
         return .failure(err)
     case .success(let keyData):
-        let EC2COSEKey = EC2COSEKey.create(pubKey: keyData)
-        switch EC2COSEKey.toCBOR() {
-        case .failure(let err):
-            return .failure(err)
-        case .success(let cborEc2coseKey):
-            return .success(cborEc2coseKey)
-        }
+        return EC2COSEKey.create(pubKey: keyData, alg: alg).flatMap { $0.toCBOR() }
     }
 }
 
@@ -66,8 +60,12 @@ func getKeyAlgorithm(_ key: SecKey) -> Result<SecKeyAlgorithm, WebAuthnError> {
     switch keyType as CFString {
     case kSecAttrKeyTypeECSECPrimeRandom:
         switch keySizeInBits {
-        case 256:
+        case 256: // P-256
             return .success(.ecdsaSignatureMessageX962SHA256)
+        case 384: // P-384
+            return .success(.ecdsaSignatureMessageX962SHA384)
+        case 521: // P-521
+            return .success(.ecdsaSignatureMessageX962SHA512)
         default:
             return .failure(.secKeyError(cause: "Given key length is not currently supported: \(keySizeInBits)"))
         }

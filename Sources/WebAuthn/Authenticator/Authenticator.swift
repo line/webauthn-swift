@@ -123,7 +123,9 @@ extension Authenticator {
                 userId: userEntity.id,
                 rpId: rpEntity.id
             )
-            guard let keyType = matchedKeyParam.alg.keyType, let keySizeInBits = matchedKeyParam.alg.keySizeInBits else {
+            guard let keyType = matchedKeyParam.alg.secKeyType,
+                  let keySizeInBits = matchedKeyParam.alg.keySizeInBits
+            else {
                 let msg = "Currently there is no supported algorithm: \(matchedKeyParam.alg)"
                 throw WebAuthnError.coreError(.notSupportedError, cause: msg)
             }
@@ -131,7 +133,7 @@ extension Authenticator {
             guard let pubKey = getPublicKey(priKey) else {
                 throw WebAuthnError.keyNotFoundError
             }
-            let cborPubKey = try convertSecKeyToCborEc2coseKey(pubKey).get()
+            let cborPubKey = try convertSecKeyToCborEc2coseKey(pubKey, alg: matchedKeyParam.alg).get()
             let attestedCredData = AttestedCredentialData(aaguid: type.aaguid, credentialId: credentialId,
                                                           publicKey: cborPubKey)
             let rpIdHash = rpEntity.id.toSHA256()

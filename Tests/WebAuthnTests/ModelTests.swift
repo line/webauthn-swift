@@ -22,7 +22,7 @@ final class ModelTests: XCTestCase {
     var attestedCredData: AttestedCredentialData {
         let privateKey = try! generatePrivateKey(kSecAttrKeyTypeECSECPrimeRandom as String, 256).get()
         let pubKey = getPublicKey(privateKey)!
-        let cborPubKey = try! convertSecKeyToCborEc2coseKey(pubKey).get()
+        let cborPubKey = try! convertSecKeyToCborEc2coseKey(pubKey, alg: .ES256).get()
         return AttestedCredentialData(aaguid: aaguid, credentialId: credentialId, publicKey: cborPubKey)
     }
     let extsOut = AuthenticatorExtensionsOutput()

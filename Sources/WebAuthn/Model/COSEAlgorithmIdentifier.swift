@@ -28,13 +28,14 @@ enum COSEAlgorithmIdentifier: Int, Codable, CaseIterable {
     case ES512 = -36    // ECDSA with SHA-512
     case ES256K = -47   // ECDSA using secp256k1 and SHA-256 (RFC 8812)
 
-    var keyType: String? {
+    var secKeyType: String? {
         switch self {
         case .RS1, .RS256, .RS384, .RS512, .PS256, .PS384, .PS512:
             return kSecAttrKeyTypeRSA as String
         case .ES256, .ES384, .ES512:
             return kSecAttrKeyTypeECSECPrimeRandom as String
         case .EDDSA, .ES256K:
+            // The Security framework offers neither Edwards curves nor secp256k1.
             return nil
         }
     }
@@ -53,5 +54,25 @@ enum COSEAlgorithmIdentifier: Int, Codable, CaseIterable {
         case .EDDSA, .ES256K:
             return nil
         }
+    }
+
+    var curve: Int? {
+        switch self {
+        case .ES256:
+            return 1 // P-256
+        case .ES384:
+            return 2 // P-384
+        case .ES512:
+            return 3 // P-521
+        case .RS1, .RS256, .RS384, .RS512, .PS256, .PS384, .PS512, .EDDSA, .ES256K:
+            return nil
+        }
+    }
+
+    var coordinateOctetLength: Int? {
+        guard curve != nil, let keySizeInBits = keySizeInBits else {
+            return nil
+        }
+        return (keySizeInBits + 7) / 8
     }
 }
