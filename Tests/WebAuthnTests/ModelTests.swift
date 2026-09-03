@@ -20,9 +20,9 @@ final class ModelTests: XCTestCase {
     let aaguid = UUID.init(uuidString: "00000000-ffff-ffff-ffff-000000000000")!
     let credentialId = generateRandomBytes(len: 32)!
     var attestedCredData: AttestedCredentialData {
-        let privateKey = try! generatePublicPrivateKeyPair(kSecAttrKeyTypeECSECPrimeRandom as String, 256).get()
+        let privateKey = try! generatePrivateKey(kSecAttrKeyTypeECSECPrimeRandom as String, 256).get()
         let pubKey = getPublicKey(privateKey)!
-        let cborPubKey = try! convertSecKeyToCborEc2coseKey(pubKey).get()
+        let cborPubKey = try! convertSecKeyToCborEc2coseKey(pubKey, alg: .ES256).get()
         return AttestedCredentialData(aaguid: aaguid, credentialId: credentialId, publicKey: cborPubKey)
     }
     let extsOut = AuthenticatorExtensionsOutput()

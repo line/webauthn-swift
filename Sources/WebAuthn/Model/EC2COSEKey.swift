@@ -16,23 +16,33 @@ import Foundation
 import SwiftCBOR
 
 struct EC2COSEKey {
+    private static let uncompressedPointPrefix: UInt8 = 0x04 // First byte of ANSI X9.63 uncompressed elliptic curve point.
+
     let kty: Int // EC2 key type
-    let alg: Int // ES256 signature algorithm
-    let crv: Int // P-256 curve
+    let alg: Int // ECDSA signature algorithm
+    let crv: Int // Curve the key lies on
     let x: Data
     let y: Data
 
-    static func create(pubKey: Data) -> Self {
-        // public key: 04 [32 bytes x] [32 bytes y] -> uncompressed public key (65 bytes)
-        assert(pubKey[0] == 4, "Given public key must be uncompressed key.")
-        assert(pubKey.count == 65, "Given public key's length must be 65.")
-        let x = pubKey[1..<33]
-        let y = pubKey[33..<pubKey.count]
-        return EC2COSEKey(kty: 2,
-                          alg: COSEAlgorithmIdentifier.ES256.rawValue,
-                          crv: 1,
-                          x: x,
-                          y: y)
+    static func create(pubKey: Data, alg: COSEAlgorithmIdentifier) -> Result<Self, WebAuthnError> {
+        guard let crv = alg.curve, let coordinateLength = alg.coordinateOctetLength else {
+            let msg = "Given algorithm is not a supported elliptic curve algorithm: \(alg)"
+            return .failure(.coreError(.notSupportedError, cause: msg))
+        }
+        let expectedLength = 1 + coordinateLength * 2
+        guard pubKey.count == expectedLength else {
+            let msg = "Given public key's length must be \(expectedLength) for \(alg), but was \(pubKey.count)."
+            return .failure(.secKeyError(cause: msg))
+        }
+        guard pubKey.first == Self.uncompressedPointPrefix else {
+            return .failure(.secKeyError(cause: "Given public key must be an uncompressed key."))
+        }
+        let coordinates = pubKey.dropFirst()
+        return .success(EC2COSEKey(kty: 2,
+                                   alg: alg.rawValue,
+                                   crv: crv,
+                                   x: Data(coordinates.prefix(coordinateLength)),
+                                   y: Data(coordinates.suffix(coordinateLength))))
     }
 
     func toCBOR() -> Result<Data, WebAuthnError> {

@@ -14,7 +14,7 @@
 
 import Foundation
 
-class AsyncOperation: Operation {
+class AsyncOperation: Operation, @unchecked Sendable {
     private enum OperationState: String {
         case ready
         case executing
