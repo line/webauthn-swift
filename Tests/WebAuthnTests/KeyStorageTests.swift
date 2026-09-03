@@ -20,7 +20,7 @@ final class KeychainManagerTests: XCTestCase {
     var ks: KeyStorage {
         KeyStorage(.biometric, keychain: mock)
     }
-    let keyLength = 256
+    let keySizeInBits = 256
     let keyType = kSecAttrKeyTypeECSECPrimeRandom as String
 
     override func tearDownWithError() throws {
@@ -29,22 +29,22 @@ final class KeychainManagerTests: XCTestCase {
 
     func testStore() {
         let keyId1 = "testKeyId1"
-        let key1 = try! generatePublicPrivateKeyPair(keyType, keyLength).get()
+        let key1 = try! generatePrivateKey(keyType, keySizeInBits).get()
         XCTAssertNoThrow(try ks.store(keyId1, key: key1).get())
         XCTAssertEqual(mock.storage[keyId1], key1)
         let keyId2 = "testKeyId2"
-        let key2 = try! generatePublicPrivateKeyPair(keyType, keyLength).get()
+        let key2 = try! generatePrivateKey(keyType, keySizeInBits).get()
         XCTAssertNoThrow(try ks.store(keyId2, key: key2).get())
         XCTAssertEqual(mock.storage[keyId2], key2)
         // case: if there is a key matching with keyId
-        let key3 = try! generatePublicPrivateKeyPair(keyType, keyLength).get()
+        let key3 = try! generatePrivateKey(keyType, keySizeInBits).get()
         XCTAssertNoThrow(try ks.store(keyId1, key: key3).get())
         XCTAssertEqual(mock.storage[keyId1], key3)
     }
 
     func testLoad() {
         let keyId = "testKeyId"
-        let key = try! generatePublicPrivateKeyPair(keyType, keyLength).get()
+        let key = try! generatePrivateKey(keyType, keySizeInBits).get()
         XCTAssertNoThrow(try ks.store(keyId, key: key).get())
         let loadedKey = try? ks.load(keyId).get()
         XCTAssertEqual(loadedKey, key)
@@ -53,7 +53,7 @@ final class KeychainManagerTests: XCTestCase {
     func testDelete() {
         let keyId = "testKeyId"
         XCTAssertNoThrow(try ks.delete(keyId).get())
-        let key = try! generatePublicPrivateKeyPair(keyType, keyLength).get()
+        let key = try! generatePrivateKey(keyType, keySizeInBits).get()
         XCTAssertNoThrow(try ks.store(keyId, key: key).get())
         XCTAssertNoThrow(try ks.delete(keyId).get())
         XCTAssertNil(mock.storage[keyId])

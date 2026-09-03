@@ -38,7 +38,7 @@ private func convertSecKeyToData(_ key: SecKey) -> Result<Data, WebAuthnError> {
     return .success(data)
 }
 
-func generatePublicPrivateKeyPair(_ type: String, _ bits: Int) -> Result<SecKey, WebAuthnError> {
+func generatePrivateKey(_ type: String, _ bits: Int) -> Result<SecKey, WebAuthnError> {
     let attributes: [String: Any] = [
         kSecAttrKeyType as String: type,
         kSecAttrKeySizeInBits as String: bits,
@@ -59,17 +59,17 @@ func getPublicKey(_ privateKey: SecKey) -> SecKey? {
 func getKeyAlgorithm(_ key: SecKey) -> Result<SecKeyAlgorithm, WebAuthnError> {
     guard let attributes = SecKeyCopyAttributes(key) as? [CFString: Any],
           let keyType = attributes[kSecAttrKeyType] as? String,
-          let keyLength = attributes[kSecAttrKeySizeInBits] as? Int
+          let keySizeInBits = attributes[kSecAttrKeySizeInBits] as? Int
     else {
         return .failure(.secKeyError(cause: "Failed to get attributes related in given key"))
     }
     switch keyType as CFString {
     case kSecAttrKeyTypeECSECPrimeRandom:
-        switch keyLength {
+        switch keySizeInBits {
         case 256:
             return .success(.ecdsaSignatureMessageX962SHA256)
         default:
-            return .failure(.secKeyError(cause: "Given key length is not currently supported: \(keyLength)"))
+            return .failure(.secKeyError(cause: "Given key length is not currently supported: \(keySizeInBits)"))
         }
     default:
         return .failure(.secKeyError(cause: "Given key type is not currently supported: \(keyType)"))

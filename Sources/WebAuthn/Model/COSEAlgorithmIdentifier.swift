@@ -26,27 +26,32 @@ enum COSEAlgorithmIdentifier: Int, Codable, CaseIterable {
     case ES256 = -7     // ECDSA with SHA-256
     case ES384 = -35    // ECDSA with SHA-384
     case ES512 = -36    // ECDSA with SHA-512
-    case ES256K = -43   // ECDSA using P-256K and SHA-256
+    case ES256K = -47   // ECDSA using secp256k1 and SHA-256 (RFC 8812)
 
-    var keyType: String {
+    var keyType: String? {
         switch self {
         case .RS1, .RS256, .RS384, .RS512, .PS256, .PS384, .PS512:
             return kSecAttrKeyTypeRSA as String
-        case .EDDSA, .ES256, .ES384, .ES512, .ES256K:
+        case .ES256, .ES384, .ES512:
             return kSecAttrKeyTypeECSECPrimeRandom as String
+        case .EDDSA, .ES256K:
+            return nil
         }
     }
 
-    var keyLen: Int {
+    var keySizeInBits: Int? {
         switch self {
-        case .RS1:
-            return 160
-        case .RS256, .PS256, .EDDSA, .ES256, .ES256K:
+        case .RS1, .RS256, .RS384, .RS512, .PS256, .PS384, .PS512:
+            return 2048
+        case .ES256:
             return 256
-        case .RS384, .PS384, .ES384:
+        case .ES384:
             return 384
-        case .RS512, .PS512, .ES512:
-            return 512
+        case .ES512:
+            // NIST P-521, not 512.
+            return 521
+        case .EDDSA, .ES256K:
+            return nil
         }
     }
 }
