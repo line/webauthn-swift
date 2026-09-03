@@ -30,20 +30,15 @@ enum COSEAlgorithmIdentifier: Int, Codable, CaseIterable {
 
     var secKeyType: String? {
         switch self {
-        case .RS1, .RS256, .RS384, .RS512, .PS256, .PS384, .PS512:
-            return kSecAttrKeyTypeRSA as String
         case .ES256, .ES384, .ES512:
             return kSecAttrKeyTypeECSECPrimeRandom as String
-        case .EDDSA, .ES256K:
-            // The Security framework offers neither Edwards curves nor secp256k1.
+        case .RS1, .RS256, .RS384, .RS512, .PS256, .PS384, .PS512, .EDDSA, .ES256K:
             return nil
         }
     }
 
     var keySizeInBits: Int? {
         switch self {
-        case .RS1, .RS256, .RS384, .RS512, .PS256, .PS384, .PS512:
-            return 2048
         case .ES256:
             return 256
         case .ES384:
@@ -51,7 +46,7 @@ enum COSEAlgorithmIdentifier: Int, Codable, CaseIterable {
         case .ES512:
             // NIST P-521, not 512.
             return 521
-        case .EDDSA, .ES256K:
+        case .RS1, .RS256, .RS384, .RS512, .PS256, .PS384, .PS512, .EDDSA, .ES256K:
             return nil
         }
     }
