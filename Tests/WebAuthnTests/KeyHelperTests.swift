@@ -17,11 +17,11 @@ import XCTest
 
 final class KeyHelperTests: XCTestCase {
     private let es256Type = kSecAttrKeyTypeECSECPrimeRandom as String
-    private let es256Length = 256
+    private let keySizeInBits = 256
 
     func testSignAndVerify() throws {
         // Sign
-        let privateKey = try generatePublicPrivateKeyPair(es256Type, es256Length).get()
+        let privateKey = try generatePrivateKey(es256Type, keySizeInBits).get()
         let secret = "this is a secret".toData()
         let signature = try sign(privateKey, .ecdsaSignatureMessageX962SHA256, secret).get()
         // Verify

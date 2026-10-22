@@ -14,18 +14,12 @@
 
 import Foundation
 
-func convertSecKeyToCborEc2coseKey(_ key: SecKey) -> Result<Data, WebAuthnError> {
+func convertSecKeyToCborEc2coseKey(_ key: SecKey, alg: COSEAlgorithmIdentifier) -> Result<Data, WebAuthnError> {
     switch convertSecKeyToData(key) { // key is always an uncompressed key
     case .failure(let err):
         return .failure(err)
     case .success(let keyData):
-        let EC2COSEKey = EC2COSEKey.create(pubKey: keyData)
-        switch EC2COSEKey.toCBOR() {
-        case .failure(let err):
-            return .failure(err)
-        case .success(let cborEc2coseKey):
-            return .success(cborEc2coseKey)
-        }
+        return EC2COSEKey.create(pubKey: keyData, alg: alg).flatMap { $0.toCBOR() }
     }
 }
 
@@ -38,7 +32,7 @@ private func convertSecKeyToData(_ key: SecKey) -> Result<Data, WebAuthnError> {
     return .success(data)
 }
 
-func generatePublicPrivateKeyPair(_ type: String, _ bits: Int) -> Result<SecKey, WebAuthnError> {
+func generatePrivateKey(_ type: String, _ bits: Int) -> Result<SecKey, WebAuthnError> {
     let attributes: [String: Any] = [
         kSecAttrKeyType as String: type,
         kSecAttrKeySizeInBits as String: bits,
@@ -59,17 +53,21 @@ func getPublicKey(_ privateKey: SecKey) -> SecKey? {
 func getKeyAlgorithm(_ key: SecKey) -> Result<SecKeyAlgorithm, WebAuthnError> {
     guard let attributes = SecKeyCopyAttributes(key) as? [CFString: Any],
           let keyType = attributes[kSecAttrKeyType] as? String,
-          let keyLength = attributes[kSecAttrKeySizeInBits] as? Int
+          let keySizeInBits = attributes[kSecAttrKeySizeInBits] as? Int
     else {
         return .failure(.secKeyError(cause: "Failed to get attributes related in given key"))
     }
     switch keyType as CFString {
     case kSecAttrKeyTypeECSECPrimeRandom:
-        switch keyLength {
-        case 256:
+        switch keySizeInBits {
+        case 256: // P-256
             return .success(.ecdsaSignatureMessageX962SHA256)
+        case 384: // P-384
+            return .success(.ecdsaSignatureMessageX962SHA384)
+        case 521: // P-521
+            return .success(.ecdsaSignatureMessageX962SHA512)
         default:
-            return .failure(.secKeyError(cause: "Given key length is not currently supported: \(keyLength)"))
+            return .failure(.secKeyError(cause: "Given key length is not currently supported: \(keySizeInBits)"))
         }
     default:
         return .failure(.secKeyError(cause: "Given key type is not currently supported: \(keyType)"))

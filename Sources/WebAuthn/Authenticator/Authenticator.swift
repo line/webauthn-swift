@@ -123,11 +123,17 @@ extension Authenticator {
                 userId: userEntity.id,
                 rpId: rpEntity.id
             )
-            let priKey = try generatePublicPrivateKeyPair(matchedKeyParam.alg.keyType, matchedKeyParam.alg.keyLen).get()
+            guard let keyType = matchedKeyParam.alg.secKeyType,
+                  let keySizeInBits = matchedKeyParam.alg.keySizeInBits
+            else {
+                let msg = "Currently there is no supported algorithm: \(matchedKeyParam.alg)"
+                throw WebAuthnError.coreError(.notSupportedError, cause: msg)
+            }
+            let priKey = try generatePrivateKey(keyType, keySizeInBits).get()
             guard let pubKey = getPublicKey(priKey) else {
                 throw WebAuthnError.keyNotFoundError
             }
-            let cborPubKey = try convertSecKeyToCborEc2coseKey(pubKey).get()
+            let cborPubKey = try convertSecKeyToCborEc2coseKey(pubKey, alg: matchedKeyParam.alg).get()
             let attestedCredData = AttestedCredentialData(aaguid: type.aaguid, credentialId: credentialId,
                                                           publicKey: cborPubKey)
             let rpIdHash = rpEntity.id.toSHA256()
