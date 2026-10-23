@@ -188,6 +188,29 @@ final class AuthenticatorTests: XCTestCase {
                 XCTFail("Unexpected error thrown: \(error)")
             }
         }
+        XCTAssertTrue(db.storage.isEmpty)
+    }
+
+    func testMakeCredentialWithRollbackFailed() async throws {
+        let db = MockCredentialSourceStorageWithDeleteFailed()
+        let mockKeychain = MockKeychainWithAddFailed()
+        let ks = KeyStorage(.biometric, keychain: mockKeychain)
+        let authn = BiometricAuthenticator(db, ks, la)
+
+        let result = await register(authn)
+        guard case .failure(.credSrcStorageError(let error, let credId, let trigger)) = result else {
+            return XCTFail("Expected credential cleanup failure: \(result)")
+        }
+        XCTAssertEqual(error as? MockCredSrcStorageError, .deleteFailed)
+        XCTAssertEqual(db.storage.count, 1)
+        XCTAssertEqual(credId, db.storage.keys.first)
+
+        guard let trigger = trigger as? WebAuthnError,
+              case .keyStorageError(let keyError, let keyCredId, _) = trigger else {
+            return XCTFail("Expected the original key storage error")
+        }
+        XCTAssertEqual(keyError, .storeFailed(status: errSecInternalError))
+        XCTAssertEqual(keyCredId, credId)
     }
 
     func testGetAssertionWithLoadAllFailedAtCredSrcStorage() async throws {

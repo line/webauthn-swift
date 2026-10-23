@@ -138,9 +138,17 @@ extension Authenticator {
             _ = try credSrcStorage.store(credSource).mapError { e in
                 WebAuthnError.credSrcStorageError(e, credId: credSource.id)
             }.get()
-            _ = try keyStorage.store(credSource.id, key: priKey).mapError { e in
-                WebAuthnError.keyStorageError(e, credId: credSource.id)
-            }.get()
+            switch keyStorage.store(credSource.id, key: priKey) {
+            case .success:
+                break
+            case .failure(let error):
+                let storeError = WebAuthnError.keyStorageError(error, credId: credSource.id)
+                // Remove the credential record if its private key could not be stored.
+                try credSrcStorage.delete(credSource.id).mapError {
+                    WebAuthnError.credSrcStorageError($0, credId: credSource.id, deleteTrigger: storeError)
+                }.get()
+                throw storeError
+            }
             return .success(AuthenticatorMakeCredentialResult(credentialId: credentialId,
                                                               attestationObject: cborAttestation))
         } catch {
