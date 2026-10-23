@@ -62,35 +62,35 @@ extension Authenticator {
         return .success(true)
     }
 
-    private func checkAllowedCredentials(_ rpId: String, _ allowedList: [PublicKeyCredentialDescriptor]?
+    func checkAllowedCredentials(
+        _ rpId: String,
+        _ allowedList: [PublicKeyCredentialDescriptor]?
     ) -> Result<[PublicKeyCredentialSource], WebAuthnError> {
-        var credentialOptions: [PublicKeyCredentialSource] = []
+        var candidates: [PublicKeyCredentialSource] = []
+        // Look up allow-listed credentials, or load all credentials if omitted.
         if let allowedList = allowedList {
             for descriptor in allowedList {
-                let result = credSrcStorage.load(descriptor.id)
-                switch result {
+                switch credSrcStorage.load(descriptor.id) {
                 case .failure(let err):
                     return .failure(.credSrcStorageError(err, credId: descriptor.id))
-                case .success(let credSrc):
-                    if let credSrc = credSrc, rpId == credSrc.rpId {
-                        credentialOptions.append(credSrc)
+                case .success(let credential):
+                    if let credential = credential {
+                        candidates.append(credential)
                     }
                 }
             }
         } else {
-            let result = credSrcStorage.loadAll()
-            switch result {
+            switch credSrcStorage.loadAll() {
             case .failure(let err):
                 return .failure(.credSrcStorageError(err))
-            case .success(let credSrcs):
-                if let credSrcs = credSrcs {
-                    for credSrc in credSrcs where rpId == credSrc.rpId {
-                        credentialOptions.append(credSrc)
-                    }
-                }
+            case .success(let credentials):
+                candidates = credentials ?? []
             }
         }
-        return .success(credentialOptions)
+        // Only use credentials belonging to this RP and authenticator type.
+        return .success(candidates.filter {
+            $0.rpId == rpId && UUID(uuidString: $0.aaguid) == type.aaguid
+        })
     }
 
     func makeCredential(hash: Data,
@@ -144,9 +144,17 @@ extension Authenticator {
             _ = try credSrcStorage.store(credSource).mapError { e in
                 WebAuthnError.credSrcStorageError(e, credId: credSource.id)
             }.get()
-            _ = try keyStorage.store(credSource.id, key: priKey).mapError { e in
-                WebAuthnError.keyStorageError(e, credId: credSource.id)
-            }.get()
+            switch keyStorage.store(credSource.id, key: priKey) {
+            case .success:
+                break
+            case .failure(let error):
+                let storeError = WebAuthnError.keyStorageError(error, credId: credSource.id)
+                // Remove the credential record if its private key could not be stored.
+                try credSrcStorage.delete(credSource.id).mapError {
+                    WebAuthnError.credSrcStorageError($0, credId: credSource.id, deleteTrigger: storeError)
+                }.get()
+                throw storeError
+            }
             return .success(AuthenticatorMakeCredentialResult(credentialId: credentialId,
                                                               attestationObject: cborAttestation))
         } catch {
