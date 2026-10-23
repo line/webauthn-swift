@@ -241,6 +241,44 @@ final class AuthenticatorTests: XCTestCase {
         }
     }
 
+    func testAllowedCredentialsWithMismatchedAAGUID() throws {
+        let biometric = BiometricAuthenticator(db, ks, la)
+        let credential = PublicKeyCredentialSource(
+            id: "device", type: "public-key", aaguid: AuthenticatorType.deviceCredential.uuidString,
+            userId: defaultUserId, rpId: defaultRpId)
+        try db.store(credential).get()
+        let descriptor = PublicKeyCredentialDescriptor(type: "public-key", id: credential.id, transports: [.itn])
+
+        // Test both lookup paths: nil uses loadAll(); an allow-list uses load(id).
+        let allowedLists: [[PublicKeyCredentialDescriptor]?] = [nil, [descriptor]]
+        for allowedList in allowedLists {
+            let candidates = try biometric.checkAllowedCredentials(defaultRpId, allowedList).get()
+            XCTAssertTrue(candidates.isEmpty)
+        }
+    }
+
+    func testAllowedCredentialsWithMixedAAGUIDs() throws {
+        let biometric = BiometricAuthenticator(db, ks, la)
+        let matchingCredential = PublicKeyCredentialSource(
+            id: "biometric", type: "public-key", aaguid: AuthenticatorType.biometric.uuidString,
+            userId: defaultUserId, rpId: defaultRpId)
+        let otherCredential = PublicKeyCredentialSource(
+            id: "device", type: "public-key", aaguid: AuthenticatorType.deviceCredential.uuidString,
+            userId: defaultUserId, rpId: defaultRpId)
+        try db.store(matchingCredential).get()
+        try db.store(otherCredential).get()
+        let descriptors = [otherCredential, matchingCredential].map {
+            PublicKeyCredentialDescriptor(type: "public-key", id: $0.id, transports: [.itn])
+        }
+
+        // Test both lookup paths: nil uses loadAll(); an allow-list uses load(id).
+        let allowedLists: [[PublicKeyCredentialDescriptor]?] = [nil, descriptors]
+        for allowedList in allowedLists {
+            let candidates = try biometric.checkAllowedCredentials(defaultRpId, allowedList).get()
+            XCTAssertEqual(candidates, [matchingCredential])
+        }
+    }
+
     func testGetAssertionWithInvalidKey() async throws {
         let authn = BiometricAuthenticator(db, ks, la)
         do {
