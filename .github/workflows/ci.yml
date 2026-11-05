@@ -1,4 +1,4 @@
-name: CI/CD using github actions
+name: CI
 
 on: [ push, pull_request, workflow_dispatch ]
 
@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build
         run: swift build
 
@@ -14,6 +14,7 @@ jobs:
     needs: build
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Test
         run: swift test
+
